@@ -37,13 +37,27 @@ caio==0.9.25 ; python_full_version < '3.11'
     # via aiofile
 caio==0.12.9 ; python_full_version >= '3.11'
     # via aiofile
+cartopy==0.25.0 ; python_full_version < '3.11'
+    # via ncvue
+cartopy==0.26.0 ; python_full_version >= '3.11'
+    # via ncvue
 certifi==2026.7.22
     # via
     #   httpcore
     #   httpx
+    #   netcdf4
+    #   pyproj
     #   requests
 cffi==2.1.1 ; platform_python_implementation != 'PyPy'
     # via cryptography
+cftime==1.6.5 ; python_full_version < '3.11'
+    # via
+    #   ncvue
+    #   netcdf4
+cftime==1.6.6 ; python_full_version >= '3.11'
+    # via
+    #   ncvue
+    #   netcdf4
 charset-normalizer==3.5.2
     # via requests
 click==8.5.0
@@ -53,6 +67,12 @@ colorama==0.4.6
     #   pytest
     #   tox
     #   typer
+contourpy==1.3.2 ; python_full_version < '3.11'
+    # via matplotlib
+contourpy==1.3.3 ; python_full_version == '3.11.*'
+    # via matplotlib
+contourpy==1.4.0 ; python_full_version >= '3.12'
+    # via matplotlib
 coverage==7.16.2
     # via fastmcp-test
 cryptography==50.0.2
@@ -61,10 +81,14 @@ cryptography==50.0.2
     #   joserfc
     #   pyjwt
     #   secretstorage
+cycler==0.12.1
+    # via matplotlib
 cyclopts==4.25.3 ; python_full_version < '3.11'
     # via fastmcp-slim
-cyclopts==5.1.1 ; python_full_version >= '3.11'
+cyclopts==5.2.0 ; python_full_version >= '3.11'
     # via fastmcp-slim
+cython==3.3.0
+    # via ncvue
 distlib==0.4.3
     # via virtualenv
 dnspython==2.8.0
@@ -78,16 +102,24 @@ exceptiongroup==1.3.1
     #   anyio
     #   fastmcp-slim
     #   pytest
-fastmcp==4.0.10
+fastmcp==4.0.11
     # via fastmcp-test
-fastmcp-slim==4.0.10
+fastmcp-slim==4.0.11
     # via fastmcp
 filelock==4.0.12
     # via
     #   python-discovery
     #   tox
     #   virtualenv
-griffelib==2.3.0
+fonttools==4.65.0 ; python_full_version < '3.11'
+    # via matplotlib
+fonttools==4.66.1 ; python_full_version >= '3.11'
+    # via matplotlib
+griffelib==2.3.0 ; python_full_version < '3.11'
+    # via
+    #   fastmcp-slim
+    #   fastmcp-test
+griffelib==2.3.2 ; python_full_version >= '3.11'
     # via
     #   fastmcp-slim
     #   fastmcp-test
@@ -117,7 +149,7 @@ idna==3.20
     #   requests
 importlib-metadata==9.0.1 ; python_full_version < '3.12'
     # via keyring
-iniconfig==2.3.0
+iniconfig==2.3.1
     # via pytest
 jaraco-classes==3.4.0
     # via keyring
@@ -143,8 +175,18 @@ jsonschema-specifications==2025.9.1
     # via jsonschema
 keyring==25.7.0
     # via py-key-value-aio
+kiwisolver==1.5.1
+    # via matplotlib
 markdown-it-py==4.2.0
     # via rich
+matplotlib==3.10.9 ; python_full_version < '3.11'
+    # via
+    #   cartopy
+    #   ncvue
+matplotlib==3.11.2 ; python_full_version >= '3.11'
+    # via
+    #   cartopy
+    #   ncvue
 mcp==2.3.0
     # via fastmcp-slim
 mcp-types==2.3.0
@@ -157,25 +199,83 @@ more-itertools==11.1.0
     # via
     #   jaraco-classes
     #   jaraco-functools
+ncvue==6.6
+    # via fastmcp-test
+netcdf4==1.7.3 ; python_full_version < '3.11' and platform_machine == 'ARM64' and sys_platform == 'win32'
+    # via
+    #   fastmcp-test
+    #   ncvue
+netcdf4==1.7.4 ; python_full_version >= '3.11' or platform_machine != 'ARM64' or sys_platform != 'win32'
+    # via
+    #   fastmcp-test
+    #   ncvue
+numpy==2.2.6 ; python_full_version < '3.11'
+    # via
+    #   cartopy
+    #   cftime
+    #   contourpy
+    #   matplotlib
+    #   ncvue
+    #   netcdf4
+    #   pandas
+    #   pykdtree
+    #   scipy
+    #   shapely
+    #   xarray
+numpy==2.4.6 ; python_full_version == '3.11.*'
+    # via
+    #   cartopy
+    #   cftime
+    #   contourpy
+    #   matplotlib
+    #   ncvue
+    #   netcdf4
+    #   pandas
+    #   pykdtree
+    #   scipy
+    #   shapely
+    #   xarray
+numpy==2.5.3 ; python_full_version >= '3.12'
+    # via
+    #   cartopy
+    #   cftime
+    #   contourpy
+    #   matplotlib
+    #   ncvue
+    #   netcdf4
+    #   pandas
+    #   pykdtree
+    #   scipy
+    #   shapely
+    #   xarray
 ollama==0.6.3
     # via fastmcp-test
 openapi-pydantic==0.6.0
     # via fastmcp-slim
-opentelemetry-api==1.45.0
+opentelemetry-api==1.45.1
     # via
     #   fastmcp-slim
     #   mcp
 packaging==26.3
     # via
+    #   cartopy
     #   fastmcp-slim
+    #   matplotlib
     #   pyproject-api
     #   pytest
     #   tox
     #   tox-uv-bare
     #   virtualenv
+    #   xarray
+pandas==2.3.3 ; python_full_version < '3.11'
+    # via xarray
+pandas==3.0.6 ; python_full_version >= '3.11'
+    # via xarray
 pathable==0.6.0
     # via jsonschema-path
-platformdirs==4.12.3
+pillow==12.3.0
+    # via matplotlib
+platformdirs==4.12.4
     # via
     #   fastmcp-slim
     #   tox
@@ -207,12 +307,30 @@ pygments==2.21.0
     #   rich-rst
 pyjwt==2.15.1
     # via mcp
+pykdtree==1.4.3
+    # via ncvue
+pyparsing==3.3.3
+    # via matplotlib
 pyperclip==1.11.0
     # via fastmcp-slim
-pyproject-api==1.11.3
+pyproj==3.7.1 ; python_full_version < '3.11'
+    # via cartopy
+pyproj==3.7.2 ; python_full_version == '3.11.*'
+    # via cartopy
+pyproj==3.8.0 ; python_full_version >= '3.12'
+    # via cartopy
+pyproject-api==1.11.4
     # via tox
+pyshp==3.1.6
+    # via
+    #   cartopy
+    #   ncvue
 pytest==9.1.1
     # via fastmcp-test
+python-dateutil==2.9.0.post0
+    # via
+    #   matplotlib
+    #   pandas
 python-discovery==1.6.1
     # via
     #   tox
@@ -226,6 +344,8 @@ python-multipart==0.0.32
     # via
     #   fastmcp-slim
     #   mcp
+pytz==2026.5 ; python_full_version < '3.11'
+    # via pandas
 pywin32==312 ; sys_platform == 'win32'
     # via mcp
 pywin32-ctypes==0.2.3 ; sys_platform == 'win32'
@@ -258,10 +378,28 @@ rpds-py==2026.9.1 ; python_full_version >= '3.11'
     #   jsonschema
     #   referencing
 ruff==0.16.10
+scipy==1.15.3 ; python_full_version < '3.11'
+    # via ncvue
+scipy==1.17.1 ; python_full_version == '3.11.*'
+    # via ncvue
+scipy==1.18.1 ; python_full_version >= '3.12'
+    # via ncvue
 secretstorage==3.5.0 ; sys_platform == 'linux'
     # via keyring
+shapely==2.1.2 ; python_full_version < '3.11'
+    # via
+    #   cartopy
+    #   ncvue
+shapely==2.2.0 ; python_full_version >= '3.11'
+    # via
+    #   cartopy
+    #   ncvue
 shellingham==1.5.4
     # via typer
+six==1.17.0
+    # via
+    #   ncvue
+    #   python-dateutil
 sse-starlette==3.5.0
     # via mcp
 starlette==1.7.0
@@ -269,7 +407,7 @@ starlette==1.7.0
     #   fastmcp-slim
     #   mcp
     #   sse-starlette
-tomli==2.4.1 ; python_full_version < '3.11'
+tomli==2.5.0 ; python_full_version < '3.11'
     # via
     #   cyclopts
     #   pyproject-api
@@ -278,7 +416,7 @@ tomli==2.4.1 ; python_full_version < '3.11'
     #   tox-uv-bare
 tomli-w==1.2.0
     # via tox
-tox==4.64.7
+tox==4.64.9
     # via tox-uv-bare
 tox-uv==1.36.1
 tox-uv-bare==1.36.1
@@ -287,7 +425,7 @@ truststore==0.10.4 ; sys_platform != 'emscripten'
     # via
     #   httpcore2
     #   httpx2
-typer==0.27.2
+typer==0.27.3
     # via fastmcp-test
 typing-extensions==4.16.0
     # via
@@ -315,6 +453,8 @@ typing-inspection==0.4.4
     #   mcp
     #   pydantic
     #   pydantic-settings
+tzdata==2026.5 ; python_full_version < '3.11' or sys_platform == 'emscripten' or sys_platform == 'win32'
+    # via pandas
 uncalled-for==0.4.0
     # via fastmcp-slim
 urllib3==2.8.0
@@ -333,5 +473,9 @@ websockets==16.1.1 ; python_full_version < '3.11'
     # via fastmcp-slim
 websockets==17.2 ; python_full_version >= '3.11'
     # via fastmcp-slim
+xarray==2025.6.1 ; python_full_version < '3.11'
+    # via fastmcp-test
+xarray==2026.9.0 ; python_full_version >= '3.11'
+    # via fastmcp-test
 zipp==4.1.1 ; python_full_version < '3.12'
     # via importlib-metadata
