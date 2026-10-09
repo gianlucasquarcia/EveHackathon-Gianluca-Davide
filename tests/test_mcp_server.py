@@ -1,6 +1,5 @@
 import asyncio
 import json
-from types import SimpleNamespace
 
 import pytest
 from fastmcp import Client
@@ -8,124 +7,9 @@ from typer.testing import CliRunner
 
 import mcp_server
 import mcp_server_cli
-import mcp_server_resources
 import mcp_server_tools
 
 runner = CliRunner()
-
-
-def test_sort_numbers_returns_ascending_order():
-    result = mcp_server_tools.sort_numbers([5, 2, 9, 1, 5, 6])
-
-    assert result == [1, 2, 5, 5, 6, 9]
-
-
-def test_long_running_greet_reports_progress_and_greets(monkeypatch):
-    monkeypatch.setattr(
-        mcp_server_tools,
-        "settings",
-        SimpleNamespace(LONG_RUNNING_TASK_FAKE_DELAY=0),
-    )
-    progress = []
-
-    async def progress_handler(value, total, _message):
-        progress.append((value, total))
-
-    async def run():
-        async with Client(
-            mcp_server.mcp,
-            progress_handler=progress_handler,
-        ) as client:
-            return await client.call_tool("long_running_greet", {"name": "Ada"})
-
-    result = asyncio.run(run())
-
-    assert result.data == "Hello, Ada!"
-    assert progress == [(0, 1), (1, 1)]
-
-
-def test_long_running_greet_hides_ctx_from_schema():
-    tools = asyncio.run(mcp_server.mcp.list_tools())
-    tool = next(t for t in tools if t.name == "long_running_greet")
-
-    assert list(tool.parameters["properties"]) == ["name"]
-
-
-def test_current_gps_position_returns_fixed_coordinates():
-    result = mcp_server_resources.get_current_gps_position()
-
-    assert result == {"latitude": 37.7749, "longitude": -122.4194}
-
-
-def test_mcp_lists_expected_tools():
-    tools = asyncio.run(mcp_server.mcp.list_tools())
-    tools_by_name = {tool.name: tool for tool in tools}
-
-    assert {"sort_numbers", "open_meteo_current_forecast"}.issubset(tools_by_name)
-    assert tools_by_name["sort_numbers"].title == "Sort Numbers"
-    assert tools_by_name["sort_numbers"].tags == {"demo", "sorting", "numbers"}
-    sort_annotations = tools_by_name["sort_numbers"].annotations
-    assert sort_annotations is not None
-    assert sort_annotations.read_only_hint is True
-    assert sort_annotations.destructive_hint is False
-    assert tools_by_name["open_meteo_current_forecast"].tags == {
-        "external-api",
-        "forecast",
-        "weather",
-    }
-    forecast_annotations = tools_by_name["open_meteo_current_forecast"].annotations
-    assert forecast_annotations is not None
-    assert forecast_annotations.open_world_hint is True
-
-
-def test_open_meteo_current_forecast_returns_response_json(monkeypatch):
-    response_data = {"current": {"temperature_2m": 21.5}}
-    requests = []
-
-    class FakeResponse:
-        def raise_for_status(self):
-            return None
-
-        def json(self):
-            return response_data
-
-    class FakeSession:
-        def mount(self, _prefix, _adapter):
-            return None
-
-        def get(self, url, **kwargs):
-            requests.append((url, kwargs))
-            return FakeResponse()
-
-    monkeypatch.setattr(mcp_server_tools.requests, "Session", FakeSession)
-
-    assert mcp_server_tools.open_meteo_current_forecast(45.0, 9.0) == response_data
-    assert "latitude=45.0&longitude=9.0" in requests[0][0]
-    assert requests[0][1] == {
-        "verify": mcp_server_tools.settings.HTTP_REQUEST_TLS_VERIFY,
-        "timeout": mcp_server_tools.settings.HTTP_REQUEST_TIMEOUT,
-    }
-
-
-@pytest.mark.parametrize(
-    ("latitude", "longitude"),
-    [(-90.1, 0), (90.1, 0), (0, -180.1), (0, 180.1)],
-)
-def test_open_meteo_current_forecast_rejects_invalid_coordinates(latitude, longitude):
-    with pytest.raises(ValueError, match="Latitude must be between"):
-        mcp_server_tools.open_meteo_current_forecast(latitude, longitude)
-
-
-def test_resources_return_expected_content():
-    assert mcp_server_resources.get_greeting() == "Hello from FastMCP Resources!"
-    assert json.loads(mcp_server_resources.get_config()) == {
-        "theme": "dark",
-        "version": "1.2.0",
-        "features": ["tools", "resources"],
-    }
-    assert mcp_server_resources.get_current_time().startswith(
-        "RESOURCE: The current UTC time is "
-    )
 
 
 def test_run_command_uses_stdio_by_default(monkeypatch):
@@ -205,3 +89,106 @@ def test_cli_list_tools_command(monkeypatch):
 
     assert result.exit_code == 0
     assert len(calls) == 1
+
+
+def _ceda_ds():
+    import xarray as xr
+
+    return xr.Dataset(
+        {"sm": ("time", [float("nan"), 0.3])},
+        coords={"time": [0, 1], "lat": 41.9},
+    )
+
+
+def _call_ceda(monkeypatch, ds=None, geo=None, **kwargs):
+    from unittest.mock import MagicMock
+
+    results = [{"uuid": "u1", "title": "T", "data": ds or _ceda_ds()}]
+    pipeline = MagicMock(return_value=results)
+    monkeypatch.setattr(mcp_server_tools, "run_pipeline", pipeline)
+    monkeypatch.setattr(mcp_server_tools, "CedaOpenSearchClient", MagicMock())
+
+    async def fake_geocode(*_args, **_kwargs):
+        return json.dumps(geo or {"bbox": "1,2,3,4"})
+
+    monkeypatch.setattr(mcp_server_tools, "geocode_local", fake_geocode)
+    args = {"ecv": "SM", "start_date": "s", "end_date": "e", **kwargs}
+    return asyncio.run(mcp_server_tools.ceda_run(**args)), pipeline
+
+
+def test_ceda_run_returns_records_with_nan_as_null(monkeypatch):
+    result, pipeline = _call_ceda(monkeypatch, latitude=41.9, longitude=12.5)
+
+    inspect = result["datasets"][0].pop("inspect")
+    assert inspect["variables"] == ["sm"] and inspect["dimensions"] == {"time": 2}
+    assert result["datasets"] == [{"uuid": "u1", "title": "T"}]
+    assert result["records"][0]["dataset_uuid"] == "u1"
+    assert result["records"][0]["sm"] is None
+    assert result["records"][1]["sm"] == 0.3
+    assert result["truncated"] is False
+    assert pipeline.call_args.args[4:7] == (41.9, 12.5, None)
+
+
+def test_ceda_run_geocodes_place_to_bbox(monkeypatch):
+    result, pipeline = _call_ceda(monkeypatch, place="Rome")
+
+    assert result["bbox"] == "1,2,3,4"
+    assert pipeline.call_args.args[6] == (1.0, 2.0, 3.0, 4.0)
+
+
+def test_ceda_run_truncates_large_results(monkeypatch):
+    monkeypatch.setattr(mcp_server_tools, "MAX_RESULT_ROWS", 1)
+
+    result, _ = _call_ceda(monkeypatch, bbox="1,2,3,4")
+
+    assert result["truncated"] is True
+    assert len(result["records"]) == 1
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {},
+        {"latitude": 1.0},
+        {"place": "x", "bbox": "1,2,3,4"},
+        {"bbox": "1,2"},
+    ],
+)
+def test_ceda_run_rejects_invalid_area(monkeypatch, kwargs):
+    with pytest.raises(ValueError):
+        _call_ceda(monkeypatch, **kwargs)
+
+
+def test_ceda_run_reports_geocoding_and_pipeline_errors(monkeypatch):
+    with pytest.raises(ValueError, match="nope"):
+        _call_ceda(monkeypatch, geo={"error": "nope"}, place="x")
+
+    from clients.ceda_opensearch_client import CedaOpenSearchError
+
+    def boom(*_a, **_k):
+        raise CedaOpenSearchError("down")
+
+    monkeypatch.setattr(mcp_server_tools, "run_pipeline", boom)
+    with pytest.raises(ValueError, match="down"):
+        asyncio.run(
+            mcp_server_tools.ceda_run("SM", "s", "e", bbox="1,2,3,4"),
+        )
+
+
+def test_ceda_run_tool_metadata():
+    tools = asyncio.run(mcp_server.mcp.list_tools())
+
+    assert [t.name for t in tools] == ["ceda_run"]
+    annotations = tools[0].annotations
+    assert tools[0].title and tools[0].tags
+    assert annotations is not None
+    assert annotations.read_only_hint is True
+    assert annotations.open_world_hint is True
+
+
+def test_ceda_run_is_listed_as_mcp_tool():
+    async def run():
+        async with Client(mcp_server.mcp) as client:
+            return [t.name for t in await client.list_tools()]
+
+    assert "ceda_run" in asyncio.run(run())
