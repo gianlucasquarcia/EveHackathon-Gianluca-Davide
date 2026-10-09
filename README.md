@@ -87,7 +87,9 @@ uv run coverage run -m pytest -v
 uv run coverage report
 ```
 
-Run the full test suite (pytest and `test.py`) across Python 3.10–3.14 with [tox](https://tox.wiki/) (requires those interpreters to be installed and discoverable, e.g. via `py -0p`):
+Run the tests in `tests/` with `uv run python test.py` (extra arguments go to pytest, e.g. `-k ceda -x`).
+
+Run the full test suite across Python 3.10–3.14 with [tox](https://tox.wiki/) (requires those interpreters to be installed and discoverable, e.g. via `py -0p`):
 
 ```bash
 uv run tox
