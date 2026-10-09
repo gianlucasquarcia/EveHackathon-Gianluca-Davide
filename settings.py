@@ -21,6 +21,12 @@ class Settings:
     HTTP_REQUEST_TIMEOUT: int = field(
         default_factory=lambda: int(os.environ.get("HTTP_REQUEST_TIMEOUT", "10"))
     )
+    CEDA_OPENSEARCH_URL: str = field(
+        default_factory=lambda: os.environ.get(
+            "CEDA_OPENSEARCH_URL",
+            "https://archive.opensearch.ceda.ac.uk/opensearch",
+        )
+    )
     HTTP_REQUEST_TLS_VERIFY: bool = field(
         default_factory=lambda: (
             os.environ.get("HTTP_REQUEST_TLS_VERIFY", "True").lower()

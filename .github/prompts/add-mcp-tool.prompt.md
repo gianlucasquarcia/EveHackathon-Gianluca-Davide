@@ -8,4 +8,4 @@ Add a new MCP tool named `${input:toolName}` that does: `${input:purpose}`.
 2. Add any new configuration to `settings.py` and `.env.template`.
 3. Add pytest tests in `tests/test_mcp_server.py` (mock any network calls), keeping 100% coverage.
 4. Update `README.md` (features and layout).
-5. Run `uv run ruff check`, `uv run ruff format`, and `uv run pytest`; fix any failures.
+5. Run `uv run ruff check`, `uv run ruff format`, and `uv run python -m pytest`; fix any failures.

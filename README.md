@@ -4,37 +4,32 @@
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![ty](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ty/main/assets/badge/v0.json)](https://github.com/astral-sh/ty)
 
-A small FastMCP server example with a Typer CLI wrapper, HTTP and stdio client examples, and a bridge for local Ollama models.
+A FastMCP server with a Typer CLI wrapper that exposes the CEDA archive (CCI) OpenSearch workflow as an MCP tool, plus a standalone client/CLI for the same pipeline.
 
 ## Features
 
-- Exposes a `long_running_greet` MCP tool that simulates a slow async task
-- Exposes a `time` MCP tool that returns the current UTC time
-- Exposes an `open_meteo_current_forecast` MCP tool that fetches live weather data from the Open-Meteo API
-- Adds titles, tags, and MCP annotations to tools so clients can identify capabilities and
-  read-only, idempotency, destructive, and external-service hints
+- Exposes a `ceda_run` MCP tool that runs the four-phase CEDA pipeline: find the CCI datasets for an ECV, list their files for a date range, pick the OPeNDAP links, and read only a point or area remotely with xarray (netcdf4)
+- `ceda_run` iterates over every matching dataset and returns, per dataset, its `uuid`, `title` and an `inspect` summary (dimensions, coordinates, variables, attributes), plus the data as JSON `records` (NaN as `null`, capped at 1000 rows, with a `truncated` flag)
+- The area is given as `place` (geocoded with Nominatim), `bbox` (`west,south,east,north`) or `latitude` + `longitude`
+- Adds titles, tags, and MCP annotations to the tool (read-only, idempotent, non-destructive, open-world)
 - Includes a Typer CLI for starting the server with stdio or HTTP transport
-- Uses environment-based settings for the default port, transport, and simulated task delay
-- Includes HTTP, stdio, and Ollama-bridging client examples
+- Uses environment-based settings for the default port, transport and the CEDA OpenSearch URL
 
 ## Project layout
 
-- `mcp_server.py` — assembles the FastMCP server by mounting the tools and resources sub-servers
-- `mcp_server_tools.py` — MCP tool definitions (`long_running_greet`, `sort_numbers`, `open_meteo_current_forecast`)
-- `mcp_server_resources.py` — MCP resource definitions (greeting, config, time, GPS position)
+- `mcp_server.py` — assembles the FastMCP server by mounting the tools sub-server
+- `mcp_server_tools.py` — MCP tool definitions (`ceda_run`)
 - `mcp_server_cli.py` — Typer CLI entry point (`run`, `list-tools` commands)
 - `settings.py` — environment-backed configuration
-- `clients/mcp_http_client.py` — HTTP MCP client that connects to a running server
-- `clients/mcp_stdio_client.py` — stdio client that spawns the server as a subprocess
-- `clients/ollama_mcp_client.py` — bridges a local Ollama model to this MCP server's tools over stdio
-- `clients/ollama_mcp_http_client.py` — same Ollama bridge, but over streamable-http against an already-running server
-- `tests/test_mcp_server.py` — tests for tool behavior and CLI commands
+- `clients/ceda_opensearch_client.py` — standalone client for the CEDA archive OpenSearch API (`CEDA_OPENSEARCH_URL`); workflow: `datasets SOILMOISTURE` (find dataset UUID) → `files <uuid> --start-date ... --end-date ...` (download + OPeNDAP links) → `subset <opendap_url> --lat 41.9 --lon 12.5` (remote point/`--bbox w,s,e,n` read with xarray/netcdf4); or all four in one go: `run SOILMOISTURE --start-date 2020-01-01T00:00:00Z --end-date 2020-01-05T23:59:59Z --place Rome [--output out.nc]`; also `search "sea surface"`, `geocode <place>` and `inspect-netcdf <file> --variables a,b` (summarise a saved NetCDF file). `run` handles all matching datasets by default; restrict with `--dataset-uuid` / `--dataset-index`, and cap files with `--max-files`. Run e.g. `uv run python clients/ceda_opensearch_client.py datasets SOILMOISTURE`
+- `tests/test_mcp_server.py` — tests for the `ceda_run` tool and the server CLI commands
+- `tests/test_ceda_opensearch_client.py` — mocked-network tests for the CEDA client, pipeline, geocoder and inspect helpers
 - `.env.template` — template for local environment configuration
 - `CONTRIBUTING.md` — contributor guide
 - `SECURITY.md` — security policy and vulnerability reporting
 - `.github/copilot-instructions.md` — repository-wide GitHub Copilot instructions
 - `.github/instructions/*.instructions.md` — path-scoped Copilot instructions (tests, server, clients)
-- `.github/prompts/*.prompt.md` — reusable Copilot prompts (`/add-mcp-tool`, `/add-mcp-resource`, `/review-changes`)
+- `.github/prompts/*.prompt.md` — reusable Copilot prompts (`/add-mcp-tool`, `/review-changes`)
 
 ## Setup
 
@@ -56,7 +51,7 @@ The project metadata in `pyproject.toml` declares the dependencies:
 - `typer`
 - `pytest`
 - `requests`
-- `ollama`
+- `xarray` and `netcdf4` (remote OPeNDAP subsetting)
 
 ## Configuration
 
@@ -66,9 +61,9 @@ precedence (see `settings.py` and `.env.template`):
 
 - `MCP_SERVER_DEFAULT_PORT` (default: `8000`)
 - `MCP_SERVER_DEFAULT_TRANSPORT` (default: `stdio`)
-- `LONG_RUNNING_TASK_FAKE_DELAY` (default: `5`) — seconds `long_running_greet` sleeps to simulate a slow task
-- `HTTP_REQUEST_TIMEOUT` (default: `10`) — seconds to wait for Open-Meteo requests
+- `HTTP_REQUEST_TIMEOUT` (default: `10`) — seconds to wait for HTTP requests
 - `HTTP_REQUEST_TLS_VERIFY` (default: `true`) — whether to verify HTTPS certificates
+- `CEDA_OPENSEARCH_URL` (default: `https://archive.opensearch.ceda.ac.uk/opensearch`) — CEDA OpenSearch base URL
 
 ## Using uv
 
@@ -79,13 +74,10 @@ uv run mcp_server.py run
 uv run mcp_server.py run --transport streamable-http --port 8000
 ```
 
-Run a client:
+Run the CEDA client:
 
 ```bash
-uv run clients/mcp_http_client.py
-uv run clients/mcp_stdio_client.py
-uv run clients/ollama_mcp_client.py "What time is it?"
-uv run clients/ollama_mcp_http_client.py "What time is it?"
+uv run python clients/ceda_opensearch_client.py run SOILMOISTURE --start-date 2020-01-01T00:00:00Z --end-date 2020-01-05T23:59:59Z --place Rome
 ```
 
 Run tests:
@@ -148,79 +140,6 @@ uv run mcp_server.py list-tools
 
 This calls the Typer `list_tools` command and prints the name, description, parameters, and output schema of each registered MCP tool.
 
-## Start the HTTP client
-
-Start the server in HTTP mode first:
-
-```bash
-uv run mcp_server.py run --transport streamable-http --port 8000
-```
-
-Then run the client:
-
-```bash
-uv run clients/mcp_http_client.py
-```
-
-The client connects to `http://localhost:8000/mcp` and calls the `time` and `long_running_greet` tools.
-
-## Start the stdio client
-
-This client launches the server as a subprocess and communicates with it over stdin/stdout — no separately running server is needed:
-
-```bash
-uv run clients/mcp_stdio_client.py
-```
-
-The script starts `mcp_server.py run` using the current Python interpreter and calls the `time` tool over stdio transport.
-
-## Connect a local Ollama model
-
-Two variants of the same bridge are provided, depending on which MCP transport you want to use. Both:
-
-1. Connect to the MCP server and list its tools
-2. Convert the tool definitions into the `tools` schema Ollama's chat API expects
-3. Send your prompt to the model
-4. If the model responds with a tool call, forward it to the MCP server via `call_tool`, feed the result back to the model, and repeat until the model returns a final answer
-
-Prerequisites for both:
-
-```bash
-ollama serve
-ollama pull llama3.1   # any tool-calling capable model
-```
-
-### stdio variant
-
-`clients/ollama_mcp_client.py` starts `mcp_server.py` as a stdio subprocess itself (same pattern as `mcp_stdio_client.py`), so no server needs to be running beforehand:
-
-```bash
-uv run clients/ollama_mcp_client.py "What time is it?"
-```
-
-### HTTP variant
-
-`clients/ollama_mcp_http_client.py` connects to an already-running server over streamable-http (same pattern as `mcp_http_client.py`). Start the server first:
-
-```bash
-uv run mcp_server.py run --transport streamable-http --port 8000
-```
-
-Then, in another terminal:
-
-```bash
-uv run clients/ollama_mcp_http_client.py "What time is it?"
-```
-
-It connects to `http://localhost:8000/mcp` by default (see `SERVER_URL` at the top of the file).
-
-Both scripts expose the target model as the `LOCAL_OLLAMA_MODEL` constant at the top of the file (defaults to `llama3.1`).
-
-The HTTP Ollama bridge also discovers MCP resources and resource templates. Because Ollama
-supports function tools rather than native MCP resources, it presents a read-only
-`read_mcp_resource(uri)` function to the model and forwards each requested URI through
-MCP's `resources/read` operation.
-
 ## Run tests
 
 ```bash
@@ -257,5 +176,6 @@ See `uv run fastmcp --help` for the full command list, including `call`, `dev`, 
 
 - `stdio` is used for local process-to-process MCP communication.
 - `streamable-http` is used for HTTP-based MCP transport.
-- The async tool (`long_running_greet`) works without wrapping `mcp.run()` in `asyncio.run(...)`.
-- `open_meteo_current_forecast` calls the public Open-Meteo API and requires network access.
+- The async tool (`ceda_run`) works without wrapping `mcp.run()` in `asyncio.run(...)`.
+- `ceda_run` calls the public CEDA OpenSearch/OPeNDAP and Nominatim services and requires network access; the CEDA server rate-limits (HTTP 429), so the client retries with backoff.
+- Run the CEDA client script with `uv run python clients/ceda_opensearch_client.py ...` from the repository root.
