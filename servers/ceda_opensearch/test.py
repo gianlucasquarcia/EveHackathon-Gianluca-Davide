@@ -6,9 +6,8 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 import requests
-import xarray as xr
-
 import server
+import xarray as xr
 from ceda_client import (
     CedaOpenSearchClient,
     CedaOpenSearchError,
