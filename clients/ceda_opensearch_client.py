@@ -23,9 +23,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from settings import settings
 
 NOMINATIM_SEARCH_URL = "https://nominatim.openstreetmap.org/search"
-NOMINATIM_USER_AGENT = os.getenv(
-    "NOMINATIM_USER_AGENT", "geocode-mcp/0.1 (agentic-eo-hackathon)"
-)
+NOMINATIM_USER_AGENT = os.getenv("NOMINATIM_USER_AGENT", "geocode-mcp/0.1 (agentic-eo-hackathon)")
 TIMEOUT = 60
 
 # Parameter names accepted by the "results" endpoint, keyed by Python argument.
@@ -97,9 +95,7 @@ class CedaOpenSearchClient:
     def _get(self, path: str, params: dict[str, Any]) -> requests.Response:
         url = f"{self.base_url}/{path}"
         try:
-            response = self._session.get(
-                url, params=params, timeout=self.timeout, verify=self.verify
-            )
+            response = self._session.get(url, params=params, timeout=self.timeout, verify=self.verify)
             response.raise_for_status()
         except requests.RequestException as exc:
             raise CedaOpenSearchError(f"Request to {url} failed: {exc}") from exc
@@ -142,9 +138,7 @@ class CedaOpenSearchClient:
         or the raw Atom XML text for ``atom``.
         """
         if response_format not in _FORMATS:
-            raise ValueError(
-                f"response_format must be one of {sorted(_FORMATS)}, got {response_format!r}"
-            )
+            raise ValueError(f"response_format must be one of {sorted(_FORMATS)}, got {response_format!r}")
         values = {
             "uuid": uuid,
             "query": query,
@@ -234,10 +228,7 @@ class CedaOpenSearchClient:
 
 def _file_entry(feature: dict[str, Any]) -> dict[str, Any]:
     props = feature.get("properties", {})
-    links = {
-        link.get("title", "").lower(): link.get("href")
-        for link in props.get("links", {}).get("related", [])
-    }
+    links = {link.get("title", "").lower(): link.get("href") for link in props.get("links", {}).get("related", [])}
     return {
         "title": props.get("title"),
         "date": props.get("date"),
@@ -364,9 +355,7 @@ def subset(
 
 
 NOMINATIM_SEARCH_URL = "https://nominatim.openstreetmap.org/search"
-NOMINATIM_USER_AGENT = os.getenv(
-    "NOMINATIM_USER_AGENT", "geocode-mcp/0.1 (agentic-eo-hackathon)"
-)
+NOMINATIM_USER_AGENT = os.getenv("NOMINATIM_USER_AGENT", "geocode-mcp/0.1 (agentic-eo-hackathon)")
 
 
 async def _http_get(
@@ -417,34 +406,19 @@ def run_pipeline(
             raise CedaOpenSearchError(f"No datasets found for ECV {ecv}")
         if dataset_index is not None:
             if not 0 <= dataset_index < len(found):
-                raise CedaOpenSearchError(
-                    f"--dataset-index must be between 0 and {len(found) - 1}"
-                )
+                raise CedaOpenSearchError(f"--dataset-index must be between 0 and {len(found) - 1}")
             found = [found[dataset_index]]
 
     results = []
     for dataset in found:
-        entries = [
-            f
-            for f in client.list_files(
-                dataset["uuid"], start_date, end_date, limit=max_files
-            )
-            if f["opendap"]
-        ]
+        entries = [f for f in client.list_files(dataset["uuid"], start_date, end_date, limit=max_files) if f["opendap"]]
         if not entries:
             continue
-        parts = [
-            open_subset(f["opendap"], lat, lon, bbox).load()
-            for f in entries[:max_files]
-        ]
+        parts = [open_subset(f["opendap"], lat, lon, bbox).load() for f in entries[:max_files]]
         data = xr.concat(parts, dim="time") if len(parts) > 1 else parts[0]
-        results.append(
-            {"uuid": dataset["uuid"], "title": dataset["title"], "data": data}
-        )
+        results.append({"uuid": dataset["uuid"], "title": dataset["title"], "data": data})
     if not results:
-        raise CedaOpenSearchError(
-            f"No OPeNDAP files for ECV {ecv} between {start_date} and {end_date}"
-        )
+        raise CedaOpenSearchError(f"No OPeNDAP files for ECV {ecv} between {start_date} and {end_date}")
     return results
 
 
@@ -458,19 +432,13 @@ def run(
     lat: float | None = typer.Option(None, help="Point latitude."),
     lon: float | None = typer.Option(None, help="Point longitude."),
     dataset_uuid: str | None = typer.Option(None, help="Skip phase 1 search."),
-    dataset_index: int | None = typer.Option(
-        None, help="Use only this dataset of phase 1 (default: all)."
-    ),
+    dataset_index: int | None = typer.Option(None, help="Use only this dataset of phase 1 (default: all)."),
     max_files: int = typer.Option(5, help="Maximum files per dataset."),
     output: str | None = typer.Option(None, help="Save the result as NetCDF."),
 ) -> None:
     """Run all four phases: find dataset, list files, pick OPeNDAP, subset."""
-    if sum(x is not None for x in (place, bbox, lat)) > 1 or (
-        (lat is None) != (lon is None)
-    ):
-        typer.echo(
-            "Error: use exactly one of --place, --bbox or --lat with --lon", err=True
-        )
+    if sum(x is not None for x in (place, bbox, lat)) > 1 or ((lat is None) != (lon is None)):
+        typer.echo("Error: use exactly one of --place, --bbox or --lat with --lon", err=True)
         raise typer.Exit(1)
     if place:
         geo = json.loads(asyncio.run(geocode_local(place, limit=1)))
@@ -563,9 +531,7 @@ async def geocode_local(
         south, north, west, east = (float(v) for v in r["boundingbox"])
         if buffer_km:
             dlat = buffer_km / 111.0
-            dlon = buffer_km / (
-                111.0 * max(math.cos(math.radians((south + north) / 2)), 0.01)
-            )
+            dlon = buffer_km / (111.0 * max(math.cos(math.radians((south + north) / 2)), 0.01))
             south, north = max(south - dlat, -90.0), min(north + dlat, 90.0)
             west, east = max(west - dlon, -180.0), min(east + dlon, 180.0)
         candidates.append(
@@ -608,9 +574,7 @@ def inspect_dataset(ds, variables: list[str] | None = None) -> dict:
         "attributes": {k: str(v) for k, v in ds.attrs.items()},
     }
     if variables:
-        summary["data"] = {
-            var: ds[var].values.tolist() for var in variables if var in ds
-        }
+        summary["data"] = {var: ds[var].values.tolist() for var in variables if var in ds}
     return summary
 
 

@@ -88,9 +88,7 @@ class CedaOpenSearchClient:
     def _get(self, path: str, params: dict[str, Any]) -> requests.Response:
         url = f"{self.base_url}/{path}"
         try:
-            response = self._session.get(
-                url, params=params, timeout=self.timeout, verify=self.verify
-            )
+            response = self._session.get(url, params=params, timeout=self.timeout, verify=self.verify)
             response.raise_for_status()
         except requests.RequestException as exc:
             raise CedaOpenSearchError(f"Request to {url} failed: {exc}") from exc
@@ -113,10 +111,7 @@ class CedaOpenSearchClient:
     ) -> dict[str, Any] | str:
         """Search the archive and return GeoJSON or Atom XML."""
         if response_format not in _FORMATS:
-            raise ValueError(
-                f"response_format must be one of {sorted(_FORMATS)}, "
-                f"got {response_format!r}"
-            )
+            raise ValueError(f"response_format must be one of {sorted(_FORMATS)}, got {response_format!r}")
         values = {
             "uuid": uuid,
             "query": query,
@@ -193,10 +188,7 @@ class CedaOpenSearchClient:
 
 def _file_entry(feature: dict[str, Any]) -> dict[str, Any]:
     properties = feature.get("properties", {})
-    links = {
-        link.get("title", "").lower(): link.get("href")
-        for link in properties.get("links", {}).get("related", [])
-    }
+    links = {link.get("title", "").lower(): link.get("href") for link in properties.get("links", {}).get("related", [])}
     return {
         "title": properties.get("title"),
         "date": properties.get("date"),
@@ -218,9 +210,7 @@ def open_subset(
     if bbox is not None:
         west, south, east, north = bbox
         latitudes = dataset["lat"]
-        latitude_slice = (
-            slice(south, north) if latitudes[0] < latitudes[-1] else slice(north, south)
-        )
+        latitude_slice = slice(south, north) if latitudes[0] < latitudes[-1] else slice(north, south)
         return dataset.sel(lat=latitude_slice, lon=slice(west, east))
     return dataset
 
@@ -290,34 +280,21 @@ def run_pipeline(
             raise CedaOpenSearchError(f"No datasets found for ECV {ecv}")
         if dataset_index is not None:
             if not 0 <= dataset_index < len(datasets):
-                raise CedaOpenSearchError(
-                    f"dataset_index must be between 0 and {len(datasets) - 1}"
-                )
+                raise CedaOpenSearchError(f"dataset_index must be between 0 and {len(datasets) - 1}")
             datasets = [datasets[dataset_index]]
 
     results = []
     for dataset in datasets:
         files = [
-            item
-            for item in client.list_files(
-                dataset["uuid"], start_date, end_date, max_files
-            )
-            if item["opendap"]
+            item for item in client.list_files(dataset["uuid"], start_date, end_date, max_files) if item["opendap"]
         ]
         if not files:
             continue
-        parts = [
-            open_subset(item["opendap"], latitude, longitude, bbox).load()
-            for item in files[:max_files]
-        ]
+        parts = [open_subset(item["opendap"], latitude, longitude, bbox).load() for item in files[:max_files]]
         data = xr.concat(parts, dim="time") if len(parts) > 1 else parts[0]
-        results.append(
-            {"uuid": dataset["uuid"], "title": dataset["title"], "data": data}
-        )
+        results.append({"uuid": dataset["uuid"], "title": dataset["title"], "data": data})
     if not results:
-        raise CedaOpenSearchError(
-            f"No OPeNDAP files for ECV {ecv} between {start_date} and {end_date}"
-        )
+        raise CedaOpenSearchError(f"No OPeNDAP files for ECV {ecv} between {start_date} and {end_date}")
     return results
 
 

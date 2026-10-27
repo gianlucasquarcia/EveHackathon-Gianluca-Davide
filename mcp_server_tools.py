@@ -113,7 +113,5 @@ async def ceda_run(
             for r in results
         ],
         "truncated": len(frame) > MAX_RESULT_ROWS,
-        "records": json.loads(
-            frame.head(MAX_RESULT_ROWS).to_json(orient="records", date_format="iso")
-        ),
+        "records": json.loads(frame.head(MAX_RESULT_ROWS).to_json(orient="records", date_format="iso")),
     }

@@ -36,9 +36,7 @@ def test_run_command_uses_http_transport_when_requested(monkeypatch):
 
     monkeypatch.setattr(mcp_server.mcp, "run", fake_run)
 
-    result = runner.invoke(
-        mcp_server.mcp_typer, ["run", "--transport", "http", "--port", "9001"]
-    )
+    result = runner.invoke(mcp_server.mcp_typer, ["run", "--transport", "http", "--port", "9001"])
 
     assert result.exit_code == 0
     assert calls == {

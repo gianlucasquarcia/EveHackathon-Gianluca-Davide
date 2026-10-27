@@ -10,9 +10,6 @@ from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
 
-_SERVER_DIR = Path(__file__).resolve().parent
-load_dotenv(_SERVER_DIR / ".env", override=False)
-
 from ceda_client import (
     CedaOpenSearchClient,
     CedaOpenSearchError,
@@ -20,6 +17,9 @@ from ceda_client import (
     inspect_dataset,
     run_pipeline,
 )
+
+_SERVER_DIR = Path(__file__).resolve().parent
+load_dotenv(_SERVER_DIR / ".env", override=False)
 
 mcp = FastMCP(
     "CEDA CCI OpenSearch",
@@ -130,9 +130,7 @@ async def ceda_run(
             for result in results
         ],
         "truncated": len(frame) > MAX_RESULT_ROWS,
-        "records": json.loads(
-            frame.head(MAX_RESULT_ROWS).to_json(orient="records", date_format="iso")
-        ),
+        "records": json.loads(frame.head(MAX_RESULT_ROWS).to_json(orient="records", date_format="iso")),
     }
 
 

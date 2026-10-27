@@ -45,9 +45,7 @@ def test_search_atom_returns_raw_text():
     c._session = MagicMock()
     c._session.get.return_value = _response(text="<feed/>")
     assert c.search(response_format="atom") == "<feed/>"
-    assert c._session.get.call_args.kwargs["params"]["httpAccept"] == (
-        "application/atom+xml"
-    )
+    assert c._session.get.call_args.kwargs["params"]["httpAccept"] == ("application/atom+xml")
 
 
 def test_search_rejects_unknown_format():
@@ -92,9 +90,7 @@ def test_cli_prints_features():
 
 
 def test_cli_reports_errors():
-    with patch.object(
-        mod.CedaOpenSearchClient, "search", side_effect=CedaOpenSearchError("boom")
-    ):
+    with patch.object(mod.CedaOpenSearchClient, "search", side_effect=CedaOpenSearchError("boom")):
         result = CliRunner().invoke(mod.app, ["search", "sea"])
     assert result.exit_code == 1
 
@@ -125,9 +121,9 @@ def test_find_datasets_returns_uuid_and_title():
     data = {"features": [{"properties": {"identifier": "u1", "title": "T"}}]}
     c = CedaOpenSearchClient(base_url="http://x")
     with patch.object(c, "search", return_value=data) as s:
-        assert c.find_datasets(
-            "SOILMOISTURE", "2020-01-01T00:00:00Z", None, "1,2,3,4"
-        ) == [{"uuid": "u1", "title": "T"}]
+        assert c.find_datasets("SOILMOISTURE", "2020-01-01T00:00:00Z", None, "1,2,3,4") == [
+            {"uuid": "u1", "title": "T"}
+        ]
     assert s.call_args.kwargs["ecv"] == "SOILMOISTURE"
     assert s.call_args.kwargs["start_date"] == "2020-01-01T00:00:00Z"
     assert s.call_args.kwargs["bbox"] == "1,2,3,4"
@@ -188,9 +184,7 @@ def test_cli_datasets_and_files_print_rows():
         return_value=[{"uuid": "u1", "title": "T"}],
     ):
         assert "u1\tT" in runner.invoke(mod.app, ["datasets", "SM"]).output
-    with patch.object(
-        mod.CedaOpenSearchClient, "list_files", return_value=[FILE_ENTRY]
-    ):
+    with patch.object(mod.CedaOpenSearchClient, "list_files", return_value=[FILE_ENTRY]):
         out = runner.invoke(mod.app, ["files", "u1"]).output
     assert "f.nc\thttp://od\thttp://dl" in out
 
@@ -210,9 +204,7 @@ def test_cli_subset_prints_result_and_handles_errors():
         sub.return_value.load.return_value = "DATA"
         result = runner.invoke(mod.app, ["subset", "http://od", "--bbox", "1,2,3,4"])
     assert "DATA" in result.output and sub.call_args.args[3] == (1.0, 2.0, 3.0, 4.0)
-    assert (
-        runner.invoke(mod.app, ["subset", "http://od", "--bbox", "1,2"]).exit_code == 1
-    )
+    assert runner.invoke(mod.app, ["subset", "http://od", "--bbox", "1,2"]).exit_code == 1
     with patch.object(mod, "open_subset", side_effect=OSError("nope")):
         assert runner.invoke(mod.app, ["subset", "http://od"]).exit_code == 1
 
@@ -263,9 +255,7 @@ def test_geocode_local_applies_buffer_and_clamps():
 
 def test_geocode_local_reports_no_results_and_http_errors():
     assert "No results" in _geocode([])[0]["error"]
-    assert (
-        "Geocoding failed" in _geocode(error=requests.ConnectionError("x"))[0]["error"]
-    )
+    assert "Geocoding failed" in _geocode(error=requests.ConnectionError("x"))[0]["error"]
 
 
 def test_cli_geocode_prints_bbox_or_fails():
@@ -279,9 +269,7 @@ def test_cli_geocode_prints_bbox_or_fails():
 
 def _pipeline_client(datasets=None, files=None):
     client = MagicMock()
-    client.find_datasets.return_value = (
-        [{"uuid": "u1", "title": "T"}] if datasets is None else datasets
-    )
+    client.find_datasets.return_value = [{"uuid": "u1", "title": "T"}] if datasets is None else datasets
     client.list_files.return_value = [FILE_ENTRY] * 2 if files is None else files
     return client
 
@@ -397,9 +385,7 @@ def _write_nc(tmp_path):
     import xarray as xr
 
     path = tmp_path / "o.nc"
-    xr.Dataset(
-        {"sm": ("time", [0.1, 0.2])}, coords={"time": [0, 1]}, attrs={"k": 1}
-    ).to_netcdf(path)
+    xr.Dataset({"sm": ("time", [0.1, 0.2])}, coords={"time": [0, 1]}, attrs={"k": 1}).to_netcdf(path)
     return str(path)
 
 
@@ -413,9 +399,7 @@ def test_inspect_netcdf_summarises_and_samples_variables(tmp_path):
 
 def test_cli_inspect_netcdf_prints_json_or_fails(tmp_path):
     runner = CliRunner()
-    ok = runner.invoke(
-        mod.app, ["inspect-netcdf", _write_nc(tmp_path), "--variables", "sm"]
-    )
+    ok = runner.invoke(mod.app, ["inspect-netcdf", _write_nc(tmp_path), "--variables", "sm"])
     assert json.loads(ok.output)["data"]["sm"]
     bad = runner.invoke(mod.app, ["inspect-netcdf", str(tmp_path / "nope.nc")])
     assert bad.exit_code == 1

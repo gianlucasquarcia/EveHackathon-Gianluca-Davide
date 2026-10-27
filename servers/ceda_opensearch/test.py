@@ -6,8 +6,9 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 import requests
-import server
 import xarray as xr
+
+import server
 from ceda_client import (
     CedaOpenSearchClient,
     CedaOpenSearchError,
@@ -66,24 +67,18 @@ def _dataset(latitude=(40.0, 50.0)):
 
 def _pipeline_client(datasets=None, files=None):
     client = MagicMock()
-    client.find_datasets.return_value = (
-        [{"uuid": "u1", "title": "T"}] if datasets is None else datasets
-    )
+    client.find_datasets.return_value = [{"uuid": "u1", "title": "T"}] if datasets is None else datasets
     client.list_files.return_value = [FILE_ENTRY] if files is None else files
     return client
 
 
 class CedaClientTests(unittest.TestCase):
     def test_search_builds_request_and_returns_geojson(self):
-        client = CedaOpenSearchClient(
-            base_url="http://example.test/os/", timeout=3, verify=False
-        )
+        client = CedaOpenSearchClient(base_url="http://example.test/os/", timeout=3, verify=False)
         client._session = MagicMock()
         client._session.get.return_value = _response({"features": []})
 
-        result = client.search(
-            query="sea", max_records=2, start_date="2020-01-01T00:00:00Z"
-        )
+        result = client.search(query="sea", max_records=2, start_date="2020-01-01T00:00:00Z")
 
         self.assertEqual(result, {"features": []})
         args, kwargs = client._session.get.call_args
@@ -131,11 +126,7 @@ class CedaClientTests(unittest.TestCase):
             client.search()
 
     def test_client_defaults_to_ceda_endpoint(self):
-        self.assertTrue(
-            CedaOpenSearchClient().base_url.startswith(
-                "https://archive.opensearch.ceda.ac.uk"
-            )
-        )
+        self.assertTrue(CedaOpenSearchClient().base_url.startswith("https://archive.opensearch.ceda.ac.uk"))
 
     def test_file_entry_extracts_opendap_link(self):
         self.assertEqual(
@@ -209,9 +200,7 @@ class CedaClientTests(unittest.TestCase):
             result = json.loads(asyncio.run(geocode_local("Rome")))
 
         self.assertEqual(result["bbox"], "12.4,41.8,12.6,42.0")
-        self.assertEqual(
-            get.call_args.args[0], "https://nominatim.openstreetmap.org/search"
-        )
+        self.assertEqual(get.call_args.args[0], "https://nominatim.openstreetmap.org/search")
         self.assertEqual(get.call_args.kwargs["params"]["q"], "Rome")
         self.assertIn("User-Agent", get.call_args.kwargs["headers"])
 
@@ -235,9 +224,7 @@ class CedaClientTests(unittest.TestCase):
         ]
         with patch("ceda_client.open_subset") as subset:
             subset.return_value.load.side_effect = parts
-            result = run_pipeline(
-                client, "SM", "start", "end", 1.0, 2.0, None, None, None, 5
-            )
+            result = run_pipeline(client, "SM", "start", "end", 1.0, 2.0, None, None, None, 5)
 
         self.assertEqual(result[0]["data"].sizes["time"], 2)
         client.list_files.assert_called_once_with("u1", "start", "end", 5)
@@ -248,12 +235,8 @@ class CedaClientTests(unittest.TestCase):
         client = _pipeline_client(datasets=datasets, files=[FILE_ENTRY])
         client.list_files.side_effect = [[FILE_ENTRY], [], [FILE_ENTRY]]
         with patch("ceda_client.open_subset") as subset:
-            subset.return_value.load.return_value = xr.Dataset(
-                {"sm": ("time", [1.0])}, coords={"time": [1]}
-            )
-            result = run_pipeline(
-                client, "SM", "start", "end", None, None, None, None, None, 5
-            )
+            subset.return_value.load.return_value = xr.Dataset({"sm": ("time", [1.0])}, coords={"time": [1]})
+            result = run_pipeline(client, "SM", "start", "end", None, None, None, None, None, 5)
 
         self.assertEqual([item["uuid"] for item in result], ["u0", "u2"])
         self.assertEqual(
@@ -262,9 +245,7 @@ class CedaClientTests(unittest.TestCase):
         )
 
     def test_run_pipeline_selects_dataset_index_and_uuid(self):
-        client = _pipeline_client(
-            datasets=[{"uuid": f"u{i}", "title": f"T{i}"} for i in range(3)]
-        )
+        client = _pipeline_client(datasets=[{"uuid": f"u{i}", "title": f"T{i}"} for i in range(3)])
         with patch("ceda_client.open_subset") as subset:
             subset.return_value.load.return_value = "data"
             result = run_pipeline(client, "SM", "s", "e", None, None, None, None, 1, 5)
@@ -273,9 +254,7 @@ class CedaClientTests(unittest.TestCase):
         client = _pipeline_client()
         with patch("ceda_client.open_subset") as subset:
             subset.return_value.load.return_value = "data"
-            result = run_pipeline(
-                client, "SM", "s", "e", None, None, None, "u9", None, 5
-            )
+            result = run_pipeline(client, "SM", "s", "e", None, None, None, "u9", None, 5)
         self.assertEqual(result[0]["uuid"], "u9")
         client.find_datasets.assert_not_called()
 
@@ -379,9 +358,7 @@ class CedaToolTests(unittest.TestCase):
                     {
                         "uuid": "u1",
                         "title": "T",
-                        "data": xr.Dataset(
-                            {"sm": ("time", [0.3])}, coords={"time": [0]}
-                        ),
+                        "data": xr.Dataset({"sm": ("time", [0.3])}, coords={"time": [0]}),
                     }
                 ]
                 result = await server.ceda_run("SM", "s", "e", place="Rome")
@@ -424,9 +401,7 @@ class CedaToolTests(unittest.TestCase):
 
         async def pipeline_error():
             with (
-                patch.object(
-                    server, "run_pipeline", side_effect=CedaOpenSearchError("offline")
-                ),
+                patch.object(server, "run_pipeline", side_effect=CedaOpenSearchError("offline")),
                 patch.object(server, "CedaOpenSearchClient"),
             ):
                 await server.ceda_run("SM", "s", "e", bbox="1,2,3,4")
