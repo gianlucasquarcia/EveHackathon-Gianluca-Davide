@@ -12,9 +12,7 @@ from typing_extensions import Self
 from urllib3 import Retry
 
 NOMINATIM_SEARCH_URL = "https://nominatim.openstreetmap.org/search"
-NOMINATIM_USER_AGENT = os.getenv(
-    "NOMINATIM_USER_AGENT", "ceda-opensearch-mcp/1.0"
-)
+NOMINATIM_USER_AGENT = os.getenv("NOMINATIM_USER_AGENT", "ceda-opensearch-mcp/1.0")
 
 _PARAM_NAMES = {
     "uuid": "uuid",
@@ -222,9 +220,7 @@ def open_subset(
         west, south, east, north = bbox
         latitudes = dataset["lat"]
         latitude_slice = (
-            slice(south, north)
-            if latitudes[0] < latitudes[-1]
-            else slice(north, south)
+            slice(south, north) if latitudes[0] < latitudes[-1] else slice(north, south)
         )
         return dataset.sel(lat=latitude_slice, lon=slice(west, east))
     return dataset
