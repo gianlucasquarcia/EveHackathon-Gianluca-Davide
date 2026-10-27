@@ -13,7 +13,7 @@ from mcp.types import ToolAnnotations
 _SERVER_DIR = Path(__file__).resolve().parent
 load_dotenv(_SERVER_DIR / ".env", override=False)
 
-from ceda_client import (
+from ceda_client import (  # noqa: E402 - must follow load_dotenv
     CedaOpenSearchClient,
     CedaOpenSearchError,
     geocode_local,

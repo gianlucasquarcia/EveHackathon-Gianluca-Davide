@@ -3,12 +3,11 @@
 import asyncio
 import json
 import os
-from typing import Any
+from typing import Any, Self
 
 import requests
 import xarray as xr
 from requests.adapters import HTTPAdapter
-from typing_extensions import Self
 from urllib3 import Retry
 
 NOMINATIM_SEARCH_URL = "https://nominatim.openstreetmap.org/search"

@@ -15,6 +15,22 @@ python server.py --transport stdio
 For Streamable HTTP, run `python server.py --transport http`; the endpoint is
 available at `http://localhost:8000/mcp`.
 
+## Run with Docker
+
+The `Dockerfile` matches the registry's `shared/Dockerfile` (Python 3.13,
+port 8000, `python server.py`). From this directory:
+
+```bash
+docker build -t ceda-opensearch-mcp .
+docker run -d --name ceda -p 8000:8000 ceda-opensearch-mcp
+docker logs ceda
+```
+
+To override settings, copy `.env.template` to `.env` and add
+`--env-file .env` to `docker run`; `.env` is excluded from the image by
+`.dockerignore`. The endpoint is `http://localhost:8000/mcp`; see the next
+section for a sample call. Stop it with `docker rm -f ceda`.
+
 ## Call the tool over HTTP
 
 The server uses stateless HTTP, so a tool call can be sent directly without a
