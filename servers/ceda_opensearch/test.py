@@ -1,14 +1,15 @@
 """Offline tests for the self-contained CEDA MCP server and client."""
 
+# ruff: noqa: I001  (import grouping depends on the directory ruff runs from)
+
 import asyncio
 import json
 import unittest
 from unittest.mock import MagicMock, patch
 
 import requests
-import xarray as xr
-
 import server
+import xarray as xr
 from ceda_client import (
     CedaOpenSearchClient,
     CedaOpenSearchError,
