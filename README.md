@@ -1,4 +1,4 @@
-# FastMCP Server template
+# FastMCP Server - Geospatial CEDA OpenSearch Client
 ![Python](https://img.shields.io/badge/python-3.10%20--%203.14-blue.svg)
 [![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://docs.astral.sh/uv/)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
@@ -181,3 +181,7 @@ See `uv run fastmcp --help` for the full command list, including `call`, `dev`, 
 - The async tool (`ceda_run`) works without wrapping `mcp.run()` in `asyncio.run(...)`.
 - `ceda_run` calls the public CEDA OpenSearch/OPeNDAP and Nominatim services and requires network access; the CEDA server rate-limits (HTTP 429), so the client retries with backoff.
 - Run the CEDA client script with `uv run python clients/ceda_opensearch_client.py ...` from the repository root.
+
+## Author
+- Gianluca Squarcia ([@github](https://github.com/gianlucasquarcia))
+- Davide Poveromo
